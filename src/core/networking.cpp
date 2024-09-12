@@ -1,8 +1,8 @@
 #include "networking.h"
 #include "platform/linux/linux_networking.h"
 
-void configureNetworkInterface(const std::string& interface, const std::string& ip) {
-    LinuxNetworking::assignIPAddress(interface, ip);
+void configureNetworkInterface(const std::string& interface, const std::string& address) {
+    LinuxNetworking::setInterfaceAddress(interface, address);
 }
 
 void bringInterfaceUp(const std::string& interface) {

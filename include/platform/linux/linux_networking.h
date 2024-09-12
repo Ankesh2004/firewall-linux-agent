@@ -4,7 +4,7 @@
 #include <string>
 
 namespace LinuxNetworking {
-    void assignIPAddress(const std::string& interface, const std::string& ip);
+    void setInterfaceAddress(const std::string& interface, const std::string& address);
     void setInterfaceState(const std::string& interface, bool up);
 }
 
