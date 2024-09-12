@@ -37,6 +37,14 @@ void setCapabilities() {
 
 int main() {
     Logger::init("logs/agent.log");
+
+    std::ifstream configFile("config/firewall_rules.conf");
+    if (!configFile.is_open()) {
+        std::cerr << "Failed to open config file: config/firewall_rules.conf" << std::endl;
+        return 1;
+    }
+    configFile.close();
+
     Config::load("config/firewall_rules.conf");
 
     setCapabilities();
@@ -46,7 +54,8 @@ int main() {
 
     applyFirewallRules("config/firewall_rules.conf");
 
-    startMonitoring();
+    std::thread monitoringThread(LinuxMonitoring::monitorInterfaces);
+    monitoringThread.join();
 
     return 0;
 }
