@@ -5,7 +5,7 @@
 
 void LinuxMonitoring::monitorInterfaces() {
     while (true) {
-        system("vnstat -i eth0");
+        system("vnstat -i ens33");
         std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 }

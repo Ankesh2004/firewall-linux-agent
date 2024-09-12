@@ -8,8 +8,8 @@ int main() {
     Logger::init("logs/agent.log");
     Config::load("config/firewall_rules.conf");
 
-    configureNetworkInterface("eth0", "192.168.1.10/24");
-    bringInterfaceUp("eth0");
+    configureNetworkInterface("ens33", "192.168.1.10/24");
+    bringInterfaceUp("ens33");
 
     applyFirewallRules("config/firewall_rules.conf");
 
