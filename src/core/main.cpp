@@ -3,8 +3,14 @@
 #include "monitoring.h"
 #include "utils/logger.h"
 #include "utils/config.h"
+#include <pcap.h>
 #include <sys/capability.h>
 #include <iostream>
+#include <fstream>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
+#include <netinet/if_ether.h>
 
 void setCapabilities() {
     cap_t caps = cap_get_proc();

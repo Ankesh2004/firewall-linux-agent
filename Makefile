@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++11 -Wall -Iinclude -Iinclude/core -Iinclude/platform/linux -Iinclude/utils
-LDFLAGS = -lcap
+LDFLAGS = -lpcap -lcap
 
 SRC_DIR = src
 PLATFORM_DIR = platform/linux
