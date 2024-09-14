@@ -14,6 +14,7 @@
 #include "../utils/logger.h"
 #include <vector>
 #include <ifaddrs.h>
+#include <algorithm>
 
 namespace LinuxMonitoring
 {
@@ -84,16 +85,20 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
 
     if (ntohs(ethHeader->ether_type) == ETHERTYPE_IP) {
         const struct ip *ipHeader = (struct ip *)(packet + sizeof(struct ether_header));
-        std::string srcIP = inet_ntoa(ipHeader->ip_src);  // Convert to std::string
-        std::string dstIP = inet_ntoa(ipHeader->ip_dst);  // Convert to std::string
+            std::string srcIP = inet_ntoa(ipHeader->ip_src);
+            std::string dstIP = inet_ntoa(ipHeader->ip_dst);
 
-        std::string logMessage = "Captured IP packet from " + srcIP + " to " + dstIP;
-        std::cout << logMessage << std::endl;
-        Logger::log(logMessage);
+            std::string logMessage = "Captured IP packet from " + srcIP + " to " + dstIP;
+            std::cout << logMessage << std::endl;
+            Logger::log(logMessage);
 
-        // Fix: Use std::find with string comparisons
-        bool isOutgoing = (std::find(localIPs.begin(), localIPs.end(), srcIP) != localIPs.end());
-        bool isIncoming = (std::find(localIPs.begin(), localIPs.end(), dstIP) != localIPs.end());;
+            // Use lambda function for IP check
+            auto isLocalIP = [&localIPs](const std::string& ip) {
+                return std::find(localIPs.begin(), localIPs.end(), ip) != localIPs.end();
+            };
+
+            bool isOutgoing = isLocalIP(srcIP);
+            bool isIncoming = isLocalIP(dstIP);
 
         switch (ipHeader->ip_p) {
             case IPPROTO_TCP: {
