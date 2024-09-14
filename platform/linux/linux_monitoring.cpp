@@ -93,23 +93,43 @@ namespace LinuxMonitoring {
                     }
                     break;
                 }
-                case IPPROTO_ICMP:
+                case IPPROTO_ICMP: {
                     logMessage = "ICMP Packet";
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
-                    break;
-                default:
-                    logMessage = "Other IP Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
+                    // For ICMP, we can't determine the process directly, but we can log the system's ICMP handler
+                    std::string processName = getProcessName(1); // PID 1 is usually the init process
+                    logMessage = "ICMP Handler Process: " + processName + " (PID: 1)";
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
                     break;
+                }
+                default: {
+                    logMessage = "Other IP Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
+                    // For other protocols, we can't determine the specific process
+                    logMessage = "Unknown Process for Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
+                    break;
+                }
             }
         } else if (ntohs(ethHeader->ether_type) == ETHERTYPE_ARP) {
             std::string logMessage = "Captured ARP packet";
             std::cout << logMessage << std::endl;
             Logger::log(logMessage);
+            // For ARP, we can log the system's network manager or a similar process
+            std::string processName = getProcessName(1); // Using PID 1 as a placeholder
+            logMessage = "ARP Handler Process: " + processName + " (PID: 1)";
+            std::cout << logMessage << std::endl;
+            Logger::log(logMessage);
         } else {
             std::string logMessage = "Captured non-IP packet";
+            std::cout << logMessage << std::endl;
+            Logger::log(logMessage);
+            // For non-IP packets, we can't determine the specific process
+            logMessage = "Unknown Process for non-IP packet";
             std::cout << logMessage << std::endl;
             Logger::log(logMessage);
         }
