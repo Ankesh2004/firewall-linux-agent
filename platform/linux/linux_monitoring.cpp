@@ -91,8 +91,9 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
         std::cout << logMessage << std::endl;
         Logger::log(logMessage);
 
-        bool isOutgoing = (std::find(localIPs.begin(), localIPs.end(), srcIP) != localIPs.end());
-        bool isIncoming = (std::find(localIPs.begin(), localIPs.end(), dstIP) != localIPs.end());
+        // Convert srcIP and dstIP to std::string explicitly for find
+        bool isOutgoing = (std::find(localIPs.begin(), localIPs.end(), std::string(srcIP)) != localIPs.end());
+        bool isIncoming = (std::find(localIPs.begin(), localIPs.end(), std::string(dstIP)) != localIPs.end());
 
         switch (ipHeader->ip_p) {
             case IPPROTO_TCP: {
