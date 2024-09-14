@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <fstream>
 #include <sstream>
+#include "../utils/logger.h"
 
 namespace LinuxMonitoring {
 
@@ -55,18 +56,24 @@ namespace LinuxMonitoring {
         if (ntohs(ethHeader->ether_type) == ETHERTYPE_IP) {
             const struct ip *ipHeader;
             ipHeader = (struct ip *)(packet + sizeof(struct ether_header));
-            std::cout << "Captured IP packet from " << inet_ntoa(ipHeader->ip_src) << " to " << inet_ntoa(ipHeader->ip_dst) << std::endl;
+            std::string logMessage = "Captured IP packet from " + std::string(inet_ntoa(ipHeader->ip_src)) + " to " + std::string(inet_ntoa(ipHeader->ip_dst));
+            std::cout << logMessage << std::endl;
+            Logger::log(logMessage);
 
             switch (ipHeader->ip_p) {
                 case IPPROTO_TCP: {
                     const struct tcphdr *tcpHeader;
                     tcpHeader = (struct tcphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
                     uint16_t destPort = ntohs(tcpHeader->dest);
-                    std::cout << "TCP Packet - Source Port: " << ntohs(tcpHeader->source) << ", Destination Port: " << destPort << std::endl;
+                    logMessage = "TCP Packet - Source Port: " + std::to_string(ntohs(tcpHeader->source)) + ", Destination Port: " + std::to_string(destPort);
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
                     int pid = getProcessIdForPort(destPort, "tcp");
                     if (pid != -1) {
                         std::string processName = getProcessName(pid);
-                        std::cout << "Destination Process: " << processName << " (PID: " << pid << ")" << std::endl;
+                        logMessage = "Destination Process: " + processName + " (PID: " + std::to_string(pid) + ")";
+                        std::cout << logMessage << std::endl;
+                        Logger::log(logMessage);
                     }
                     break;
                 }
@@ -74,25 +81,37 @@ namespace LinuxMonitoring {
                     const struct udphdr *udpHeader;
                     udpHeader = (struct udphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
                     uint16_t destPort = ntohs(udpHeader->dest);
-                    std::cout << "UDP Packet - Source Port: " << ntohs(udpHeader->source) << ", Destination Port: " << destPort << std::endl;
+                    logMessage = "UDP Packet - Source Port: " + std::to_string(ntohs(udpHeader->source)) + ", Destination Port: " + std::to_string(destPort);
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
                     int pid = getProcessIdForPort(destPort, "udp");
                     if (pid != -1) {
                         std::string processName = getProcessName(pid);
-                        std::cout << "Destination Process: " << processName << " (PID: " << pid << ")" << std::endl;
+                        logMessage = "Destination Process: " + processName + " (PID: " + std::to_string(pid) + ")";
+                        std::cout << logMessage << std::endl;
+                        Logger::log(logMessage);
                     }
                     break;
                 }
                 case IPPROTO_ICMP:
-                    std::cout << "ICMP Packet" << std::endl;
+                    logMessage = "ICMP Packet";
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
                     break;
                 default:
-                    std::cout << "Other IP Protocol: " << static_cast<int>(ipHeader->ip_p) << std::endl;
+                    logMessage = "Other IP Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
                     break;
             }
         } else if (ntohs(ethHeader->ether_type) == ETHERTYPE_ARP) {
-            std::cout << "Captured ARP packet" << std::endl;
+            std::string logMessage = "Captured ARP packet";
+            std::cout << logMessage << std::endl;
+            Logger::log(logMessage);
         } else {
-            std::cout << "Captured non-IP packet" << std::endl;
+            std::string logMessage = "Captured non-IP packet";
+            std::cout << logMessage << std::endl;
+            Logger::log(logMessage);
         }
     }
 
@@ -100,12 +119,16 @@ namespace LinuxMonitoring {
         char errbuf[PCAP_ERRBUF_SIZE];
         pcap_t *handle = pcap_open_live("ens33", BUFSIZ, 1, 1000, errbuf);
         if (handle == nullptr) {
-            std::cerr << "Failed to open device ens33: " << errbuf << std::endl;
+            std::string errorMessage = "Failed to open device ens33: " + std::string(errbuf);
+            std::cerr << errorMessage << std::endl;
+            Logger::log(errorMessage);
             return;
         }
 
         if (pcap_loop(handle, 0, packetHandler, nullptr) < 0) {
-            std::cerr << "pcap_loop() failed: " << pcap_geterr(handle) << std::endl;
+            std::string errorMessage = "pcap_loop() failed: " + std::string(pcap_geterr(handle));
+            std::cerr << errorMessage << std::endl;
+            Logger::log(errorMessage);
             return;
         }
 

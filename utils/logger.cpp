@@ -1,14 +1,16 @@
 #include "logger.h"
 #include <fstream>
+#include <iostream>
 
-namespace Logger {
-    std::ofstream logFile; // Define logFile
+std::ofstream logFile;
 
-    void init(const std::string& filePath) {
-        logFile.open(filePath, std::ios::out | std::ios::app);
+void Logger::log(const std::string &message) {
+    if (!logFile.is_open()) {
+        logFile.open("logs/agent.log", std::ios::app);
     }
-
-    void log(const std::string& message) {
+    if (logFile.is_open()) {
         logFile << message << std::endl;
+    } else {
+        std::cerr << "Failed to open log file" << std::endl;
     }
 }

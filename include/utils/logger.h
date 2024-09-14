@@ -4,10 +4,9 @@
 #include <string>
 #include <fstream>
 
-namespace Logger {
-    extern std::ofstream logFile; // Declare logFile
-    void init(const std::string& filePath);
-    void log(const std::string& message);
-}
+class Logger {
+public:
+    static void log(const std::string &message);
+};
 
 #endif // LOGGER_H
