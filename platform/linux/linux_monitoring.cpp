@@ -8,10 +8,18 @@
 #include <netinet/udp.h>
 #include <netinet/if_ether.h>
 #include <arpa/inet.h>
+#include <ndpi_api.h>
 #include <unistd.h>
 #include <fstream>
 #include <sstream>
 #include "../utils/logger.h"
+
+// Initialize nDPI
+ndpi_struct *ndpi = ndpi_init_detection_module();
+if (ndpi == nullptr) {
+    std::cerr << "Failed to initialize nDPI" << std::endl;
+    return;
+}
 
 namespace LinuxMonitoring
 {
@@ -90,6 +98,16 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
                     logMessage = "Source Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
+
+                    // Detect and log application layer protocol using nDPI
+                    struct ndpi_id_struct *src, *dst;
+                    struct ndpi_flow_struct *flow = ndpi_flow_malloc(SIZEOF_FLOW_STRUCT);
+                    ndpi_protocol protocol = ndpi_detection_process_packet(ndpi, flow, (uint8_t *)ipHeader, pkthdr->len, time(NULL), src, dst);
+                    logMessage = "Detected Protocol: " + std::string(ndpi_get_proto_name(ndpi, protocol));
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
+
+                    ndpi_flow_free(flow);
                     break;
                 }
                 case IPPROTO_UDP: {
@@ -104,6 +122,16 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
                     logMessage = "Source Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
+
+                    // Detect and log application layer protocol using nDPI
+                    struct ndpi_id_struct *src, *dst;
+                    struct ndpi_flow_struct *flow = ndpi_flow_malloc(SIZEOF_FLOW_STRUCT);
+                    ndpi_protocol protocol = ndpi_detection_process_packet(ndpi, flow, (uint8_t *)ipHeader, pkthdr->len, time(NULL), src, dst);
+                    logMessage = "Detected Protocol: " + std::string(ndpi_get_proto_name(ndpi, protocol));
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
+
+                    ndpi_flow_free(flow);
                     break;
                 }
                 case IPPROTO_ICMP: {
@@ -140,6 +168,16 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
                     logMessage = "Destination Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
+
+                    // Detect and log application layer protocol using nDPI
+                    struct ndpi_id_struct *src, *dst;
+                    struct ndpi_flow_struct *flow = ndpi_flow_malloc(SIZEOF_FLOW_STRUCT);
+                    ndpi_protocol protocol = ndpi_detection_process_packet(ndpi, flow, (uint8_t *)ipHeader, pkthdr->len, time(NULL), src, dst);
+                    logMessage = "Detected Protocol: " + std::string(ndpi_get_proto_name(ndpi, protocol));
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
+
+                    ndpi_flow_free(flow);
                     break;
                 }
                 case IPPROTO_UDP: {
@@ -154,6 +192,16 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
                     logMessage = "Destination Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
+
+                    // Detect and log application layer protocol using nDPI
+                    struct ndpi_id_struct *src, *dst;
+                    struct ndpi_flow_struct *flow = ndpi_flow_malloc(SIZEOF_FLOW_STRUCT);
+                    ndpi_protocol protocol = ndpi_detection_process_packet(ndpi, flow, (uint8_t *)ipHeader, pkthdr->len, time(NULL), src, dst);
+                    logMessage = "Detected Protocol: " + std::string(ndpi_get_proto_name(ndpi, protocol));
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
+
+                    ndpi_flow_free(flow);
                     break;
                 }
                 case IPPROTO_ICMP: {
@@ -216,3 +264,6 @@ void monitorInterfaces() {
 }
 
 }
+
+// Cleanup nDPI
+ndpi_exit_detection_module(ndpi);
