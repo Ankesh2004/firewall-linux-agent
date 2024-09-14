@@ -70,7 +70,7 @@ std::vector<std::string> getLocalIPAddresses() {
             char addressBuffer[INET_ADDRSTRLEN];
             void* tmpAddrPtr = &((struct sockaddr_in *)ifAddrStruct->ifa_addr)->sin_addr;
             inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
-            localIPs.push_back(std::string(addressBuffer));
+            localIPs.push_back(std::string(addressBuffer));  // Store as std::string
         }
         ifAddrStruct = ifAddrStruct->ifa_next;
     }
@@ -84,8 +84,9 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
 
     if (ntohs(ethHeader->ether_type) == ETHERTYPE_IP) {
         const struct ip *ipHeader = (struct ip *)(packet + sizeof(struct ether_header));
-        std::string srcIP = inet_ntoa(ipHeader->ip_src);
-        std::string dstIP = inet_ntoa(ipHeader->ip_dst);
+        std::string srcIP = inet_ntoa(ipHeader->ip_src);  // Convert to std::string
+        std::string dstIP = inet_ntoa(ipHeader->ip_dst);  // Convert to std::string
+
         std::string logMessage = "Captured IP packet from " + srcIP + " to " + dstIP;
         std::cout << logMessage << std::endl;
         Logger::log(logMessage);
