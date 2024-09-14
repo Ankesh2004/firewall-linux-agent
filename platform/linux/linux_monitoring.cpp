@@ -52,12 +52,14 @@ namespace LinuxMonitoring
         pclose(pipe);
 
         size_t pidPos = result.find("pid=");
+        Logger::log("ss command output: " + result);
         if (pidPos != std::string::npos)
         {
             size_t commaPos = result.find(",", pidPos);
             if (commaPos != std::string::npos)
             {
                 std::string pidStr = result.substr(pidPos + 4, commaPos - (pidPos + 4));
+                Logger::log("Extracted PID string: " + pidStr);
                 try
                 {
                     int pid = std::stoi(pidStr);
@@ -70,6 +72,7 @@ namespace LinuxMonitoring
                 }
             }
         }
+
         return -1;
     }
 
