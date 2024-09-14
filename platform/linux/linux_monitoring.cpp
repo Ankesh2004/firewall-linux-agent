@@ -18,9 +18,11 @@ namespace LinuxMonitoring {
     std::string getProcessName(int pid) {
         std::string procPath = "/proc/" + std::to_string(pid) + "/comm";
         std::ifstream procFile(procPath);
-        std::string processName;
+        std::string processName = "Unknown";
         if (procFile.is_open()) {
             std::getline(procFile, processName);
+        } else {
+            Logger::log("Failed to open process file: " + procPath);
         }
         return processName;
     }
@@ -28,7 +30,10 @@ namespace LinuxMonitoring {
     int getProcessIdForPort(uint16_t port, const char* protocol) {
         std::string command = "ss -tlnp | grep " + std::string(protocol) + " | grep :" + std::to_string(port);
         FILE* pipe = popen(command.c_str(), "r");
-        if (!pipe) return -1;
+        if (!pipe) {
+            Logger::log("Failed to execute command: " + command);
+            return -1;
+        }
 
         char buffer[128];
         std::string result = "";
@@ -43,7 +48,11 @@ namespace LinuxMonitoring {
             size_t commaPos = result.find(",", pidPos);
             if (commaPos != std::string::npos) {
                 std::string pidStr = result.substr(pidPos + 4, commaPos - (pidPos + 4));
-                return std::stoi(pidStr);
+                try {
+                    return std::stoi(pidStr);
+                } catch (const std::exception& e) {
+                    Logger::log("Failed to convert PID to integer: " + pidStr);
+                }
             }
         }
         return -1;
@@ -69,12 +78,10 @@ namespace LinuxMonitoring {
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
                     int pid = getProcessIdForPort(destPort, "tcp");
-                    if (pid != -1) {
-                        std::string processName = getProcessName(pid);
-                        logMessage = "Destination Process: " + processName + " (PID: " + std::to_string(pid) + ")";
-                        std::cout << logMessage << std::endl;
-                        Logger::log(logMessage);
-                    }
+                    std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
+                    logMessage = "Destination Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
                     break;
                 }
                 case IPPROTO_UDP: {
@@ -85,19 +92,16 @@ namespace LinuxMonitoring {
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
                     int pid = getProcessIdForPort(destPort, "udp");
-                    if (pid != -1) {
-                        std::string processName = getProcessName(pid);
-                        logMessage = "Destination Process: " + processName + " (PID: " + std::to_string(pid) + ")";
-                        std::cout << logMessage << std::endl;
-                        Logger::log(logMessage);
-                    }
+                    std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
+                    logMessage = "Destination Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
+                    std::cout << logMessage << std::endl;
+                    Logger::log(logMessage);
                     break;
                 }
                 case IPPROTO_ICMP: {
                     logMessage = "ICMP Packet";
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
-                    // For ICMP, we can't determine the process directly, but we can log the system's ICMP handler
                     std::string processName = getProcessName(1); // PID 1 is usually the init process
                     logMessage = "ICMP Handler Process: " + processName + " (PID: 1)";
                     std::cout << logMessage << std::endl;
@@ -108,7 +112,6 @@ namespace LinuxMonitoring {
                     logMessage = "Other IP Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
-                    // For other protocols, we can't determine the specific process
                     logMessage = "Unknown Process for Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
                     std::cout << logMessage << std::endl;
                     Logger::log(logMessage);
@@ -119,7 +122,6 @@ namespace LinuxMonitoring {
             std::string logMessage = "Captured ARP packet";
             std::cout << logMessage << std::endl;
             Logger::log(logMessage);
-            // For ARP, we can log the system's network manager or a similar process
             std::string processName = getProcessName(1); // Using PID 1 as a placeholder
             logMessage = "ARP Handler Process: " + processName + " (PID: 1)";
             std::cout << logMessage << std::endl;
@@ -128,7 +130,6 @@ namespace LinuxMonitoring {
             std::string logMessage = "Captured non-IP packet";
             std::cout << logMessage << std::endl;
             Logger::log(logMessage);
-            // For non-IP packets, we can't determine the specific process
             logMessage = "Unknown Process for non-IP packet";
             std::cout << logMessage << std::endl;
             Logger::log(logMessage);
