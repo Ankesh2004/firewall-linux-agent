@@ -15,16 +15,18 @@
 
 namespace LinuxMonitoring
 {
-    // Function to get process name based on PID
-std::string getProcessName(int pid) {
-    std::string path = "/proc/" + std::to_string(pid) + "/comm";
-    std::ifstream file(path);
-    if (file.is_open()) {
-        std::string processName;
-        std::getline(file, processName);
-        return processName;
+// Helper function to execute a command and get the output
+std::string exec(const std::string& cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
     }
-    return "Unknown";
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    return result;
 }
     // std::string getProcessName(int pid)
     // {
