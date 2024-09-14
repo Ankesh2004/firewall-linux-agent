@@ -4,7 +4,8 @@
 #include <string>
 #include <vector>
 
-namespace LinuxFirewall {
+namespace 
+LinuxFirewall {
     void loadRules(const std::string& configFilePath);
     void applyRules();
 

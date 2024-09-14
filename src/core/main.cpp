@@ -3,6 +3,7 @@
 #include "monitoring.h"
 #include "utils/logger.h"
 #include "utils/config.h"
+#include "platform/linux/linux_monitoring.h" // Add this line
 #include <pcap.h>
 #include <sys/capability.h>
 #include <iostream>
@@ -11,6 +12,7 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/if_ether.h>
+#include <thread>
 
 void setCapabilities() {
     cap_t caps = cap_get_proc();
