@@ -6,6 +6,7 @@
 
 class Logger {
 public:
+    static void init(const std::string &logFilePath);
     static void log(const std::string &message);
 };
 
