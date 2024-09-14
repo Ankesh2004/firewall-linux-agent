@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall -Iinclude -Iinclude/core -Iinclude/platform/linux -Iinclude/utils -I/path/to/ndpi/include
-LDFLAGS = -lpcap -lcap -L/path/to/ndpi/lib -lndpi
+CXXFLAGS = -std=c++11 -Wall -Iinclude -Iinclude/core -Iinclude/platform/linux -Iinclude/utils -I/home/hemlocktree/Desktop/ndpi/include
+LDFLAGS = -lpcap -lcap -L/home/hemlocktree/Desktop/ndpi/lib -lndpi
 
 SRC_DIR = src
 PLATFORM_DIR = platform/linux
