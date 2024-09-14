@@ -90,7 +90,7 @@ std::string exec(const std::string& cmd) {
 
     // Function to get process ID for a given port and protocol
 int getProcessIdForPort(uint16_t port, const std::string& protocol) {
-    std::string command = "ss -p " + protocol + " | grep ':' + std::to_string(port) + ' '";
+    std::string command = "ss -tulnp | grep '" + protocol + "' | grep ':" + std::to_string(port) + "'";
     std::string output = exec(command);
     std::string pidStr = "pid=";
     size_t pos = output.find(pidStr);
@@ -104,6 +104,8 @@ int getProcessIdForPort(uint16_t port, const std::string& protocol) {
     }
     return -1; // Process not found
 }
+
+
 
 // Function to get process name based on PID
 std::string getProcessName(int pid) {
