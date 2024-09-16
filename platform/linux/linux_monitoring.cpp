@@ -15,11 +15,11 @@
 #include <sstream>
 #include <ctime>
 
-
+    pcap_dumper_t *pcapDumper = nullptr;
 namespace LinuxMonitoring
 {
 
-    pcap_dumper_t *pcapDumper = nullptr;
+
 // Helper function to execute a command and get the output
 std::string exec(const std::string& cmd) {
     std::array<char, 128> buffer;
@@ -155,7 +155,7 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
     packetInfo.direction = (packetInfo.srcIp == "192.168.1.10") ? LinuxFirewall::Direction::OUT : LinuxFirewall::Direction::IN;
 
     // Get process name (this is a placeholder, you'll need to implement this based on your system)
-    packetInfo.process = getProcessName(getProcessIdForPort(std::stoi(packetInfo.srcPort), packetInfo.protocol));
+   packetInfo.process = getProcessName(packetInfo.srcPort == "*" ? -1 : getProcessIdForPort(std::stoi(packetInfo.srcPort), packetInfo.protocol));
 
     // Apply firewall rules
     LinuxFirewall::Action action = checkPacket(packetInfo);
