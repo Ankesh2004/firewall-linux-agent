@@ -72,6 +72,7 @@ std::string getProcessName(int pid) {
     return "Unknown";
 }
 
+
 void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     pcap_dumper_t *pcapDumper = reinterpret_cast<pcap_dumper_t*>(userData);
     pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet); // Write packet to .pcap file
