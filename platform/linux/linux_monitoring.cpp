@@ -1,4 +1,6 @@
 #include "linux_monitoring.h"
+#include "core/firewall.h"
+#include "utils/logger.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -11,9 +13,8 @@
 #include <unistd.h>
 #include <fstream>
 #include <sstream>
-#include "../utils/logger.h"
 #include <ctime>
-#include "core/firewall.h"
+
 
 namespace LinuxMonitoring
 {
@@ -75,8 +76,33 @@ std::string getProcessName(int pid) {
 
 void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     pcap_dumper_t *pcapDumper = reinterpret_cast<pcap_dumper_t*>(userData);
-    pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet); // Write packet to .pcap file
+        // pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet); // Write packet to .pcap file
+    pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet);
+
+    LinuxFirewall::PacketInfo packetInfo;
+    packetInfo.srcMac = "";
+    packetInfo.dstMac = "";
+    packetInfo.srcIp = "";
+    packetInfo.dstIp = "";
+    packetInfo.srcPort = "";
+    packetInfo.dstPort = "";
+    packetInfo.protocol = "";
+    packetInfo.process = "";
+    packetInfo.direction = LinuxFirewall::Direction::ANY;
+
     const struct ether_header *ethHeader = (struct ether_header *)packet;
+
+    // Set Ethernet information
+    char srcMac[18], dstMac[18];
+    snprintf(srcMac, sizeof(srcMac), "%02x:%02x:%02x:%02x:%02x:%02x",
+             ethHeader->ether_shost[0], ethHeader->ether_shost[1], ethHeader->ether_shost[2],
+             ethHeader->ether_shost[3], ethHeader->ether_shost[4], ethHeader->ether_shost[5]);
+    snprintf(dstMac, sizeof(dstMac), "%02x:%02x:%02x:%02x:%02x:%02x",
+             ethHeader->ether_dhost[0], ethHeader->ether_dhost[1], ethHeader->ether_dhost[2],
+             ethHeader->ether_dhost[3], ethHeader->ether_dhost[4], ethHeader->ether_dhost[5]);
+    
+    packetInfo.srcMac = srcMac;
+    packetInfo.dstMac = dstMac;
 
     if (ntohs(ethHeader->ether_type) == ETHERTYPE_IP) {
         const struct ip *ipHeader = (struct ip *)(packet + sizeof(struct ether_header));
@@ -148,11 +174,11 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
 
     Logger::log(logMessage);
 
-    if (action == LinuxFirewall::Action::DROP) {
-        // Here you would implement the actual packet dropping logic
-        // This might involve using iptables or other system-specific methods
-        Logger::log("Dropped packet based on firewall rules");
-    }
+    // if (action == LinuxFirewall::Action::DROP) {
+    //     // Here you would implement the actual packet dropping logic
+    //     // This might involve using iptables or other system-specific methods
+    //     Logger::log("Dropped packet based on firewall rules");
+    // }
 
     pcap_dump_flush(pcapDumper);
 }
