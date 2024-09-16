@@ -32,6 +32,8 @@ std::string exec(const std::string& cmd) {
     }
     return result;
 }
+// pcap file path 
+const char* pcapFilePath = "/tmp/captured_packets.pcap";
 
 // Function to get process ID for a given port and protocol
 int getProcessIdForPort(uint16_t port, const std::string& protocol) {
@@ -71,7 +73,8 @@ std::string getProcessName(int pid) {
 }
 
 void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    pcap_dump(userData, pkthdr, packet); // Write packet to .pcap file
+    pcap_dumper_t *pcapDumper = reinterpret_cast<pcap_dumper_t*>(userData);
+    pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet); // Write packet to .pcap file
     const struct ether_header *ethHeader = (struct ether_header *)packet;
 
     if (ntohs(ethHeader->ether_type) == ETHERTYPE_IP) {
@@ -202,6 +205,9 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
         std::cout << logMessage << std::endl;
         Logger::log(logMessage);
     }
+
+    // Flush the pcap dump file to ensure data is written
+    pcap_dump_flush(pcapDumper);
 }
 
 void monitorInterfaces() {
@@ -214,16 +220,10 @@ void monitorInterfaces() {
         return;
     }
     
-    // Add this check
-    // if (pcapDumper == nullptr) {
-    //     std::string errorMessage = "pcapDumper is null, cannot open dump file";
-    //     std::cerr << errorMessage << std::endl;
-    //     Logger::log(errorMessage);
-    //     pcap_close(handle);
-    //     return;
-    // }
+    Logger::log("Successfully opened device ens33 for capture");
 
-    pcapDumper = pcap_dump_open(handle, "captured_packets.pcap");
+    const char* pcapFilePath = "captured_packets.pcap";
+    pcap_dumper_t *pcapDumper = pcap_dump_open(handle, pcapFilePath);
     if (pcapDumper == nullptr) {
         std::string errorMessage = "Failed to open dump file: " + std::string(pcap_geterr(handle));
         std::cerr << errorMessage << std::endl;
@@ -231,18 +231,22 @@ void monitorInterfaces() {
         pcap_close(handle);
         return;
     }
+    
+    Logger::log("Successfully opened pcap dump file: " + std::string(pcapFilePath));
 
-    if (pcap_loop(handle, 0, packetHandler, reinterpret_cast<u_char*>(pcapDumper)) < 0) {
+    Logger::log("Starting packet capture loop...");
+    int result = pcap_loop(handle, 0, packetHandler, reinterpret_cast<u_char*>(pcapDumper));
+    if (result < 0) {
         std::string errorMessage = "pcap_loop() failed: " + std::string(pcap_geterr(handle));
         std::cerr << errorMessage << std::endl;
         Logger::log(errorMessage);
-        pcap_dump_close(pcapDumper);
-        pcap_close(handle);
-        return;
+    } else {
+        Logger::log("Packet capture loop completed successfully");
     }
 
     pcap_dump_close(pcapDumper);
     pcap_close(handle);
+    Logger::log("Closed pcap dump file and capture handle");
 }
 
 }
