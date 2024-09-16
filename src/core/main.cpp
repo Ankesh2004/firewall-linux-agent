@@ -38,26 +38,30 @@ void setCapabilities() {
 }
 
 int main() {
-    Logger::init("logs/agent.log");
+    try {
+        Logger::init("logs/agent.log");
 
-    std::ifstream configFile("config/firewall_rules.conf");
-    if (!configFile.is_open()) {
-        std::cerr << "Failed to open config file: config/firewall_rules.conf" << std::endl;
+        std::ifstream configFile("config/firewall_rules.conf");
+        if (!configFile.is_open()) {
+            throw std::runtime_error("Failed to open config file: config/firewall_rules.conf");
+        }
+        configFile.close();
+
+        Config::load("config/firewall_rules.conf");
+
+        setCapabilities();
+
+        configureNetworkInterface("ens33", "192.168.1.10/24");
+        bringInterfaceUp("ens33");
+
+        applyFirewallRules("config/firewall_rules.conf");
+
+        LinuxMonitoring::monitorInterfaces();
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        Logger::log(std::string("Error: ") + e.what());
         return 1;
     }
-    configFile.close();
-
-    Config::load("config/firewall_rules.conf");
-
-    setCapabilities();
-
-    configureNetworkInterface("ens33", "192.168.1.10/24");
-    bringInterfaceUp("ens33");
-
-    applyFirewallRules("config/firewall_rules.conf");
-
-    std::thread monitoringThread(LinuxMonitoring::monitorInterfaces);
-    monitoringThread.join();
 
     return 0;
 }

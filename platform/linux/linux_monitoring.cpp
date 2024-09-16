@@ -213,13 +213,34 @@ void monitorInterfaces() {
         Logger::log(errorMessage);
         return;
     }
+    
+    // Add this check
+    if (pcapDumper == nullptr) {
+        std::string errorMessage = "pcapDumper is null, cannot open dump file";
+        std::cerr << errorMessage << std::endl;
+        Logger::log(errorMessage);
+        pcap_close(handle);
+        return;
+    }
+
     pcapDumper = pcap_dump_open(handle, "captured_packets.pcap");
-    if (pcap_loop(handle, 0, packetHandler, nullptr) < 0) {
+    if (pcapDumper == nullptr) {
+        std::string errorMessage = "Failed to open dump file: " + std::string(pcap_geterr(handle));
+        std::cerr << errorMessage << std::endl;
+        Logger::log(errorMessage);
+        pcap_close(handle);
+        return;
+    }
+
+    if (pcap_loop(handle, 0, packetHandler, reinterpret_cast<u_char*>(pcapDumper)) < 0) {
         std::string errorMessage = "pcap_loop() failed: " + std::string(pcap_geterr(handle));
         std::cerr << errorMessage << std::endl;
         Logger::log(errorMessage);
+        pcap_dump_close(pcapDumper);
+        pcap_close(handle);
         return;
     }
+
     pcap_dump_close(pcapDumper);
     pcap_close(handle);
 }
