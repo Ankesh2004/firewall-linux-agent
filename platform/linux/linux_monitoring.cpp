@@ -13,7 +13,7 @@
 #include <sstream>
 #include "../utils/logger.h"
 #include <ctime>
-#include "../linux/linux_firewall.h"
+#include "core/firewall.h"
 
 namespace LinuxMonitoring
 {
@@ -75,22 +75,8 @@ std::string getProcessName(int pid) {
 
 void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     pcap_dumper_t *pcapDumper = reinterpret_cast<pcap_dumper_t*>(userData);
-    pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet);
-
+    pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet); // Write packet to .pcap file
     const struct ether_header *ethHeader = (struct ether_header *)packet;
-    LinuxFirewall::PacketInfo packetInfo;
-
-    // Set Ethernet information
-    char srcMac[18], dstMac[18];
-    snprintf(srcMac, sizeof(srcMac), "%02x:%02x:%02x:%02x:%02x:%02x",
-             ethHeader->ether_shost[0], ethHeader->ether_shost[1], ethHeader->ether_shost[2],
-             ethHeader->ether_shost[3], ethHeader->ether_shost[4], ethHeader->ether_shost[5]);
-    snprintf(dstMac, sizeof(dstMac), "%02x:%02x:%02x:%02x:%02x:%02x",
-             ethHeader->ether_dhost[0], ethHeader->ether_dhost[1], ethHeader->ether_dhost[2],
-             ethHeader->ether_dhost[3], ethHeader->ether_dhost[4], ethHeader->ether_dhost[5]);
-    
-    packetInfo.srcMac = srcMac;
-    packetInfo.dstMac = dstMac;
 
     if (ntohs(ethHeader->ether_type) == ETHERTYPE_IP) {
         const struct ip *ipHeader = (struct ip *)(packet + sizeof(struct ether_header));
@@ -146,7 +132,14 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
     packetInfo.process = getProcessName(getProcessIdForPort(std::stoi(packetInfo.srcPort), packetInfo.protocol));
 
     // Apply firewall rules
-    LinuxFirewall::Action action = LinuxFirewall::applyRules(packetInfo);
+    LinuxFirewall::Action action = checkPacket(packetInfo);
+
+    if (action == LinuxFirewall::Action::DROP) {
+        // Log that the packet was dropped
+        Logger::log("Packet dropped: " + packetInfo.srcIp + ":" + packetInfo.srcPort + 
+                    " -> " + packetInfo.dstIp + ":" + packetInfo.dstPort);
+        return; // Don't process this packet further
+    }
 
     std::string logMessage = "Packet: " + packetInfo.protocol + " " + packetInfo.srcIp + ":" + packetInfo.srcPort + 
                              " -> " + packetInfo.dstIp + ":" + packetInfo.dstPort + 
