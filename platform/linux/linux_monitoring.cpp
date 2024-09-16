@@ -13,7 +13,7 @@
 #include <sstream>
 #include "../utils/logger.h"
 #include <ctime>
-
+#include "../linux/linux_firewall.h"
 
 namespace LinuxMonitoring
 {
@@ -75,139 +75,92 @@ std::string getProcessName(int pid) {
 
 void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     pcap_dumper_t *pcapDumper = reinterpret_cast<pcap_dumper_t*>(userData);
-    pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet); // Write packet to .pcap file
+    pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet);
+
     const struct ether_header *ethHeader = (struct ether_header *)packet;
+    LinuxFirewall::PacketInfo packetInfo;
+
+    // Set Ethernet information
+    char srcMac[18], dstMac[18];
+    snprintf(srcMac, sizeof(srcMac), "%02x:%02x:%02x:%02x:%02x:%02x",
+             ethHeader->ether_shost[0], ethHeader->ether_shost[1], ethHeader->ether_shost[2],
+             ethHeader->ether_shost[3], ethHeader->ether_shost[4], ethHeader->ether_shost[5]);
+    snprintf(dstMac, sizeof(dstMac), "%02x:%02x:%02x:%02x:%02x:%02x",
+             ethHeader->ether_dhost[0], ethHeader->ether_dhost[1], ethHeader->ether_dhost[2],
+             ethHeader->ether_dhost[3], ethHeader->ether_dhost[4], ethHeader->ether_dhost[5]);
+    
+    packetInfo.srcMac = srcMac;
+    packetInfo.dstMac = dstMac;
 
     if (ntohs(ethHeader->ether_type) == ETHERTYPE_IP) {
         const struct ip *ipHeader = (struct ip *)(packet + sizeof(struct ether_header));
-        std::string logMessage = "Captured IP packet from " + std::string(inet_ntoa(ipHeader->ip_src)) + " to " + std::string(inet_ntoa(ipHeader->ip_dst));
-        std::cout << logMessage << std::endl;
-        Logger::log(logMessage);
+        packetInfo.srcIp = inet_ntoa(ipHeader->ip_src);
+        packetInfo.dstIp = inet_ntoa(ipHeader->ip_dst);
 
-        std::string srcIp = std::string(inet_ntoa(ipHeader->ip_src));
-        if (srcIp == "192.168.142.132") {
-            switch (ipHeader->ip_p) {
-                case IPPROTO_TCP: {
-                    const struct tcphdr *tcpHeader = (struct tcphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
-                    uint16_t srcPort = ntohs(tcpHeader->source);
-                    logMessage = "TCP Packet - Source Port: " + std::to_string(srcPort) + ", Destination Port: " + std::to_string(ntohs(tcpHeader->dest));
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-
-                    int pid = getProcessIdForPort(srcPort, "tcp");
-                    std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
-                    logMessage = "Source Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-                    break;
-                }
-                case IPPROTO_UDP: {
-                    const struct udphdr *udpHeader = (struct udphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
-                    uint16_t srcPort = ntohs(udpHeader->source);
-                    logMessage = "UDP Packet - Source Port: " + std::to_string(srcPort) + ", Destination Port: " + std::to_string(ntohs(udpHeader->dest));
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-
-                    int pid = getProcessIdForPort(srcPort, "udp");
-                    std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
-                    logMessage = "Source Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-
-                    break;
-                }
-                case IPPROTO_ICMP: {
-                    logMessage = "ICMP Packet";
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-                    std::string processName = getProcessName(1); // PID 1 is usually the init process
-                    logMessage = "ICMP Handler Process: " + processName + " (PID: 1)";
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-                    break;
-                }
-                default: {
-                    logMessage = "Other IP Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-                    logMessage = "Unknown Process for Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-                    break;
-                }
+        switch (ipHeader->ip_p) {
+            case IPPROTO_TCP: {
+                const struct tcphdr *tcpHeader = (struct tcphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
+                packetInfo.protocol = "TCP";
+                packetInfo.srcPort = std::to_string(ntohs(tcpHeader->source));
+                packetInfo.dstPort = std::to_string(ntohs(tcpHeader->dest));
+                break;
             }
-        } else {
-            switch (ipHeader->ip_p) {
-                case IPPROTO_TCP: {
-                    const struct tcphdr *tcpHeader = (struct tcphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
-                    uint16_t destPort = ntohs(tcpHeader->dest);
-                    logMessage = "TCP Packet - Source Port: " + std::to_string(ntohs(tcpHeader->source)) + ", Destination Port: " + std::to_string(destPort);
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-
-                    int pid = getProcessIdForPort(destPort, "tcp");
-                    std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
-                    logMessage = "Destination Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-
-                    break;
-                }
-                case IPPROTO_UDP: {
-                    const struct udphdr *udpHeader = (struct udphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
-                    uint16_t destPort = ntohs(udpHeader->dest);
-                    logMessage = "UDP Packet - Source Port: " + std::to_string(ntohs(udpHeader->source)) + ", Destination Port: " + std::to_string(destPort);
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-
-                    int pid = getProcessIdForPort(destPort, "udp");
-                    std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
-                    logMessage = "Destination Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-
-
-                    break;
-                }
-                case IPPROTO_ICMP: {
-                    logMessage = "ICMP Packet";
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-                    std::string processName = getProcessName(1); // PID 1 is usually the init process
-                    logMessage = "ICMP Handler Process: " + processName + " (PID: 1)";
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-                    break;
-                }
-                default: {
-                    logMessage = "Other IP Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-                    logMessage = "Unknown Process for Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));
-                    std::cout << logMessage << std::endl;
-                    Logger::log(logMessage);
-                    break;
-                }
+            case IPPROTO_UDP: {
+                const struct udphdr *udpHeader = (struct udphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
+                packetInfo.protocol = "UDP";
+                packetInfo.srcPort = std::to_string(ntohs(udpHeader->source));
+                packetInfo.dstPort = std::to_string(ntohs(udpHeader->dest));
+                break;
+            }
+            case IPPROTO_ICMP: {
+                packetInfo.protocol = "ICMP";
+                packetInfo.srcPort = "*";
+                packetInfo.dstPort = "*";
+                break;
+            }
+            default: {
+                packetInfo.protocol = "OTHER";
+                packetInfo.srcPort = "*";
+                packetInfo.dstPort = "*";
+                break;
             }
         }
     } else if (ntohs(ethHeader->ether_type) == ETHERTYPE_ARP) {
-        std::string logMessage = "Captured ARP packet";
-        std::cout << logMessage << std::endl;
-        Logger::log(logMessage);
-        std::string processName = getProcessName(1); // Using PID 1 as a placeholder
-        logMessage = "ARP Handler Process: " + processName + " (PID: 1)";
-        std::cout << logMessage << std::endl;
-        Logger::log(logMessage);
+        packetInfo.protocol = "ARP";
+        packetInfo.srcIp = "*";
+        packetInfo.dstIp = "*";
+        packetInfo.srcPort = "*";
+        packetInfo.dstPort = "*";
     } else {
-        std::string logMessage = "Captured non-IP packet";
-        std::cout << logMessage << std::endl;
-        Logger::log(logMessage);
-        logMessage = "Unknown Process for non-IP packet";
-        std::cout << logMessage << std::endl;
-        Logger::log(logMessage);
+        packetInfo.protocol = "UNKNOWN";
+        packetInfo.srcIp = "*";
+        packetInfo.dstIp = "*";
+        packetInfo.srcPort = "*";
+        packetInfo.dstPort = "*";
     }
 
-    // Flush the pcap dump file to ensure data is written
+    // Determine direction (this is a simplification, you may need to adjust based on your network setup)
+    packetInfo.direction = (packetInfo.srcIp == "192.168.1.10") ? LinuxFirewall::Direction::OUT : LinuxFirewall::Direction::IN;
+
+    // Get process name (this is a placeholder, you'll need to implement this based on your system)
+    packetInfo.process = getProcessName(getProcessIdForPort(std::stoi(packetInfo.srcPort), packetInfo.protocol));
+
+    // Apply firewall rules
+    LinuxFirewall::Action action = LinuxFirewall::applyRules(packetInfo);
+
+    std::string logMessage = "Packet: " + packetInfo.protocol + " " + packetInfo.srcIp + ":" + packetInfo.srcPort + 
+                             " -> " + packetInfo.dstIp + ":" + packetInfo.dstPort + 
+                             " Process: " + packetInfo.process + 
+                             " Action: " + (action == LinuxFirewall::Action::ACCEPT ? "ACCEPT" : "DROP");
+
+    Logger::log(logMessage);
+
+    if (action == LinuxFirewall::Action::DROP) {
+        // Here you would implement the actual packet dropping logic
+        // This might involve using iptables or other system-specific methods
+        Logger::log("Dropped packet based on firewall rules");
+    }
+
     pcap_dump_flush(pcapDumper);
 }
 

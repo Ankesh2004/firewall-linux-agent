@@ -49,6 +49,7 @@ int main() {
         configFile.close();
 
         Config::load("config/firewall_rules.conf");
+        LinuxFirewall::loadRules("config/firewall_rules.conf");
 
         setCapabilities();
 
