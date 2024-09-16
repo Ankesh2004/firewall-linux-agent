@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include "../utils/logger.h"
+#include <ctime>
 
 // Initialize nDPI
 ndpi_struct *ndpi = ndpi_init_detection_module();
@@ -23,6 +24,8 @@ if (ndpi == nullptr) {
 
 namespace LinuxMonitoring
 {
+
+    pcap_dumper_t *pcapDumper = nullptr;
 // Helper function to execute a command and get the output
 std::string exec(const std::string& cmd) {
     std::array<char, 128> buffer;
@@ -75,6 +78,7 @@ std::string getProcessName(int pid) {
 }
 
 void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+    pcap_dump(userData, pkthdr, packet); // Write packet to .pcap file
     const struct ether_header *ethHeader = (struct ether_header *)packet;
 
     if (ntohs(ethHeader->ether_type) == ETHERTYPE_IP) {
@@ -252,14 +256,14 @@ void monitorInterfaces() {
         Logger::log(errorMessage);
         return;
     }
-
+    pcapDumper = pcap_dump_open(handle, "captured_packets.pcap");
     if (pcap_loop(handle, 0, packetHandler, nullptr) < 0) {
         std::string errorMessage = "pcap_loop() failed: " + std::string(pcap_geterr(handle));
         std::cerr << errorMessage << std::endl;
         Logger::log(errorMessage);
         return;
     }
-
+    pcap_dump_close(pcapDumper);
     pcap_close(handle);
 }
 
