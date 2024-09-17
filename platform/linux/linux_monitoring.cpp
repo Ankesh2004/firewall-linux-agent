@@ -15,7 +15,9 @@
 #include <sstream>
 #include <ctime>
 
-    pcap_dumper_t *pcapDumper = nullptr;
+pcap_dumper_t *pcapDumper = nullptr;
+// pcap file path 
+const char* pcapFilePath = "/tmp/captured_packets.pcap";
 namespace LinuxMonitoring
 {
 
@@ -33,8 +35,7 @@ std::string exec(const std::string& cmd) {
     }
     return result;
 }
-// pcap file path 
-const char* pcapFilePath = "/tmp/captured_packets.pcap";
+
 
 // Function to get process ID for a given port and protocol
 int getProcessIdForPort(uint16_t port, const std::string& protocol) {
@@ -185,6 +186,7 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_c
 
 void monitorInterfaces() {
     char errbuf[PCAP_ERRBUF_SIZE];
+    Logger::log("Attempting to open device ens33 for capture...");
     pcap_t *handle = pcap_open_live("ens33", BUFSIZ, 1, 1000, errbuf);
     if (handle == nullptr) {
         std::string errorMessage = "Failed to open device ens33: " + std::string(errbuf);
@@ -195,7 +197,7 @@ void monitorInterfaces() {
     
     Logger::log("Successfully opened device ens33 for capture");
 
-    const char* pcapFilePath = "captured_packets.pcap";
+    Logger::log("Attempting to open pcap dump file...");
     pcap_dumper_t *pcapDumper = pcap_dump_open(handle, pcapFilePath);
     if (pcapDumper == nullptr) {
         std::string errorMessage = "Failed to open dump file: " + std::string(pcap_geterr(handle));
@@ -213,8 +215,10 @@ void monitorInterfaces() {
         std::string errorMessage = "pcap_loop() failed: " + std::string(pcap_geterr(handle));
         std::cerr << errorMessage << std::endl;
         Logger::log(errorMessage);
+    } else if (result == 0) {
+        Logger::log("Packet capture loop completed (count reached)");
     } else {
-        Logger::log("Packet capture loop completed successfully");
+        Logger::log("Packet capture loop interrupted");
     }
 
     pcap_dump_close(pcapDumper);

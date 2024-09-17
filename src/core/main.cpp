@@ -61,7 +61,8 @@ int main() {
         LinuxMonitoring::monitorInterfaces();
 
         // Add a delay to allow some packets to be captured
-        std::this_thread::sleep_for(std::chrono::seconds(30));
+        std::this_thread::sleep_for(std::chrono::seconds(60));
+        Logger::log("Monitoring completed.");
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         Logger::log(std::string("Error: ") + e.what());
