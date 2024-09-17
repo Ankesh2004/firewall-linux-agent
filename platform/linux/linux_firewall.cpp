@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include "utils/logger.h" 
 
 namespace LinuxFirewall {
     // enum class Action { ACCEPT, DROP };
@@ -54,7 +55,7 @@ namespace LinuxFirewall {
             if (tokens.size() == 10) {
                 FirewallRule rule;
                 rule.action = tokens[0] == "ACCEPT" ? Action::ACCEPT : Action::DROP;
-                rule.direction = tokens[1] == "IN" ? Direction::IN : Direction::OUT;
+                rule.direction = tokens[1] == "IN" ? Direction::IN : (tokens[1] == "OUT" ? Direction::OUT : Direction::ANY);
                 rule.protocol = tokens[2];
                 rule.srcMac = tokens[3];
                 rule.dstMac = tokens[4];
@@ -83,6 +84,7 @@ namespace LinuxFirewall {
     }
 
     Action applyRules(const PacketInfo& packet) {
+        Logger::log("Applying firewall rules to packet: " + packet.srcIp + ":" + packet.srcPort + " -> " + packet.dstIp + ":" + packet.dstPort);
         for (const auto& rule : rules) {
             if (matchRule(rule, packet)) {
                 return rule.action;

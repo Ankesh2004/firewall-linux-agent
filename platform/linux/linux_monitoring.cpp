@@ -18,6 +18,7 @@
 pcap_dumper_t *pcapDumper = nullptr;
 // pcap file path 
 const char* pcapFilePath = "/tmp/captured_packets.pcap";
+std::atomic<bool> stopCapture(false);
 namespace LinuxMonitoring
 {
 
@@ -77,6 +78,7 @@ std::string getProcessName(int pid) {
 
 void packetHandler(u_char *userData, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     pcap_dumper_t *pcapDumper = reinterpret_cast<pcap_dumper_t*>(userData);
+    Logger::log("Packet received: " + std::to_string(pkthdr->len) + " bytes");
         // pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet); // Write packet to .pcap file
     pcap_dump(reinterpret_cast<u_char*>(pcapDumper), pkthdr, packet);
 
@@ -210,7 +212,19 @@ void monitorInterfaces() {
     Logger::log("Successfully opened pcap dump file: " + std::string(pcapFilePath));
 
     Logger::log("Starting packet capture loop...");
-    int result = pcap_loop(handle, 0, packetHandler, reinterpret_cast<u_char*>(pcapDumper));
+    while (!stopCapture) {
+    struct pcap_pkthdr* header;
+    const u_char* packet;
+    int result = pcap_next_ex(handle, &header, &packet);
+    if (result == 1) {
+        packetHandler(reinterpret_cast<u_char*>(pcapDumper), header, packet);
+    } else if (result == -1) {
+        std::string errorMessage = "pcap_next_ex() failed: " + std::string(pcap_geterr(handle));
+        std::cerr << errorMessage << std::endl;
+        Logger::log(errorMessage);
+        break;
+    }
+}
     if (result < 0) {
         std::string errorMessage = "pcap_loop() failed: " + std::string(pcap_geterr(handle));
         std::cerr << errorMessage << std::endl;

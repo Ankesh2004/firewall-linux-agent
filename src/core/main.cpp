@@ -39,7 +39,7 @@ void setCapabilities() {
 
 int main() {
     try {
-        Logger::init("logs/agent.log");
+        // Logger::init("logs/agent.log");
         Logger::init("/tmp/agent.log");
 
         std::ifstream configFile("config/firewall_rules.conf");
@@ -58,10 +58,13 @@ int main() {
 
         applyFirewallRules("config/firewall_rules.conf");
 
-        LinuxMonitoring::monitorInterfaces();
+        std::thread monitorThread(LinuxMonitoring::monitorInterfaces);
 
         // Add a delay to allow some packets to be captured
         std::this_thread::sleep_for(std::chrono::seconds(60));
+        LinuxMonitoring::stopCapture = true;
+        monitorThread.join();
+
         Logger::log("Monitoring completed.");
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
