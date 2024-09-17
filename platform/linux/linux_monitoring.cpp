@@ -18,10 +18,10 @@
 pcap_dumper_t *pcapDumper = nullptr;
 // pcap file path 
 const char* pcapFilePath = "/tmp/captured_packets.pcap";
-std::atomic<bool> stopCapture(false);
+
 namespace LinuxMonitoring
 {
-
+std::atomic<bool> stopCapture(false);
 
 // Helper function to execute a command and get the output
 std::string exec(const std::string& cmd) {
