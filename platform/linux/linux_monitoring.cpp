@@ -223,18 +223,13 @@ void monitorInterfaces() {
             std::cerr << errorMessage << std::endl;
             Logger::log(errorMessage);
             break;
+        } else if (result == 0) {
+            // Timeout expired, continue the loop
+            continue;
         }
     }
 
-    if (result < 0) {
-        std::string errorMessage = "pcap_loop() failed: " + std::string(pcap_geterr(handle));
-        std::cerr << errorMessage << std::endl;
-        Logger::log(errorMessage);
-    } else if (result == 0) {
-        Logger::log("Packet capture loop completed (count reached)");
-    } else {
-        Logger::log("Packet capture loop interrupted");
-    }
+    Logger::log("Packet capture loop completed");
 
     pcap_dump_close(pcapDumper);
     pcap_close(handle);
