@@ -213,18 +213,19 @@ void monitorInterfaces() {
 
     Logger::log("Starting packet capture loop...");
     while (!stopCapture) {
-    struct pcap_pkthdr* header;
-    const u_char* packet;
-    int result = pcap_next_ex(handle, &header, &packet);
-    if (result == 1) {
-        packetHandler(reinterpret_cast<u_char*>(pcapDumper), header, packet);
-    } else if (result == -1) {
-        std::string errorMessage = "pcap_next_ex() failed: " + std::string(pcap_geterr(handle));
-        std::cerr << errorMessage << std::endl;
-        Logger::log(errorMessage);
-        break;
+        struct pcap_pkthdr* header;
+        const u_char* packet;
+        int result = pcap_next_ex(handle, &header, &packet);
+        if (result == 1) {
+            packetHandler(reinterpret_cast<u_char*>(pcapDumper), header, packet);
+        } else if (result == -1) {
+            std::string errorMessage = "pcap_next_ex() failed: " + std::string(pcap_geterr(handle));
+            std::cerr << errorMessage << std::endl;
+            Logger::log(errorMessage);
+            break;
+        }
     }
-}
+
     if (result < 0) {
         std::string errorMessage = "pcap_loop() failed: " + std::string(pcap_geterr(handle));
         std::cerr << errorMessage << std::endl;
