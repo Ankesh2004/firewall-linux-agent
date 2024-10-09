@@ -37,6 +37,46 @@ void setCapabilities() {
     cap_free(caps);
 }
 
+std::string getNetworkInterface() {
+    std::ifstream configFile("config/network.conf");
+    std::string line;
+    std::string interface;
+
+    while (std::getline(configFile, line)) {
+        std::istringstream iss(line);
+        std::string key, value;
+        if (std::getline(iss, key, '=') && std::getline(iss, value)) {
+            if (key == "interface") {
+                interface = value;
+                break;
+            }
+        }
+    }
+
+    // If the interface is empty, call the script to set it
+    if (interface.empty()) {
+        std::cout << "Network interface not set. Running script to detect and set interface..." << std::endl;
+        system("../../platform/linux/set_network_interface.sh");
+
+        // Re-read the configuration file to get the updated interface
+        configFile.clear(); // Clear EOF flag
+        configFile.seekg(0, std::ios::beg); // Rewind to the beginning of the file
+
+        while (std::getline(configFile, line)) {
+            std::istringstream iss(line);
+            std::string key, value;
+            if (std::getline(iss, key, '=') && std::getline(iss, value)) {
+                if (key == "interface") {
+                    interface = value;
+                    break;
+                }
+            }
+        }
+    }
+
+    return interface.empty() ? "ens33" : interface; // Default value if still empty
+}
+
 int main() {
     try {
         // Initialize logging
@@ -48,8 +88,11 @@ int main() {
         // Set capabilities
         setCapabilities();
 
+        // Get network interface from configuration
+        std::string networkInterface = getNetworkInterface();
+
         // Configure network interface
-        configureNetworkInterface("ens33", "192.168.1.10/24");
+        configureNetworkInterface(networkInterface, "192.168.1.10/24");
         bringInterfaceUp("ens33");
 
         // Apply firewall rules
