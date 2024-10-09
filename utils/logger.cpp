@@ -5,21 +5,21 @@
 #include <iomanip>
 #include <ctime>
 
-std::ofstream logFile;
+std::ofstream Logger::logFile;
+std::mutex Logger::logMutex;
 
-void Logger::init(const std::string &logFilePath) {
+void Logger::init(const std::string& logFilePath) {
     logFile.open(logFilePath, std::ios::out | std::ios::app);
     if (!logFile.is_open()) {
-        throw std::runtime_error("Failed to open log file: " + logFilePath);
+        std::cerr << "Failed to open log file: " << logFilePath << std::endl;
     }
 }
 
-void Logger::log(const std::string &message) {
+void Logger::log(const std::string& message) {
+    std::lock_guard<std::mutex> guard(logMutex);
     if (logFile.is_open()) {
-        auto now = std::chrono::system_clock::now();
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        logFile << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S") << " - " << message << std::endl;
-        logFile.flush(); // Ensure the message is written immediately
+        std::time_t now = std::time(nullptr);
+        logFile << std::ctime(&now) << ": " << message << std::endl;
     } else {
         std::cerr << "Log file is not open. Message: " << message << std::endl;
     }

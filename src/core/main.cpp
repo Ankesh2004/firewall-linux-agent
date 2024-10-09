@@ -39,24 +39,23 @@ void setCapabilities() {
 
 int main() {
     try {
+        // Initialize logging
         Logger::init("logs/agent.log");
-        Logger::init("/tmp/agent.log");
 
-        std::ifstream configFile("config/firewall_rules.conf");
-        if (!configFile.is_open()) {
-            throw std::runtime_error("Failed to open config file: config/firewall_rules.conf");
-        }
-        configFile.close();
-
+        // Load configuration
         Config::load("config/firewall_rules.conf");
 
+        // Set capabilities
         setCapabilities();
 
+        // Configure network interface
         configureNetworkInterface("ens33", "192.168.1.10/24");
         bringInterfaceUp("ens33");
 
+        // Apply firewall rules
         applyFirewallRules("config/firewall_rules.conf");
 
+        // Start monitoring interfaces
         LinuxMonitoring::monitorInterfaces();
 
         // Add a delay to allow some packets to be captured
