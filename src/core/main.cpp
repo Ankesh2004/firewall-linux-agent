@@ -13,6 +13,7 @@
 #include <netinet/udp.h>
 #include <netinet/if_ether.h>
 #include <thread>
+#include <sstream>
 
 void setCapabilities() {
     cap_t caps = cap_get_proc();
