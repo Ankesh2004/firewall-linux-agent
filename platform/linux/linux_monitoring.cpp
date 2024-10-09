@@ -78,10 +78,10 @@ namespace LinuxMonitoring {
         uint16_t port = isSource ? ntohs(tcpHeader->source) : ntohs(tcpHeader->dest);
         std::string logMessage = "TCP Packet - " + std::string(isSource ? "Source" : "Destination") + " Port: " + std::to_string(port);
         logPacketInfo(logMessage);
-
+    
         int pid = getProcessIdForPort(port, "tcp");
         std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
-        logMessage = (isSource ? "Source" : "Destination") + " Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
+        logMessage = std::string(isSource ? "Source" : "Destination") + " Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
         logPacketInfo(logMessage);
     }
 
@@ -90,10 +90,10 @@ namespace LinuxMonitoring {
         uint16_t port = isSource ? ntohs(udpHeader->source) : ntohs(udpHeader->dest);
         std::string logMessage = "UDP Packet - " + std::string(isSource ? "Source" : "Destination") + " Port: " + std::to_string(port);
         logPacketInfo(logMessage);
-
+    
         int pid = getProcessIdForPort(port, "udp");
         std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
-        logMessage = (isSource ? "Source" : "Destination") + " Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
+        logMessage = std::string(isSource ? "Source" : "Destination") + " Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
         logPacketInfo(logMessage);
     }
 
