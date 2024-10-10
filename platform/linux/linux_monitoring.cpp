@@ -8,11 +8,15 @@
 #include <netinet/udp.h>
 #include <netinet/if_ether.h>
 #include <arpa/inet.h>
+#include <netinet/ip_icmp.h>
+#include <unordered_map>
 #include <unistd.h>
 #include <fstream>
 #include <sstream>
 #include "../utils/logger.h"
 #include <ctime>
+#include <cstring>
+#include <regex>
 
 namespace LinuxMonitoring {
 
@@ -65,6 +69,24 @@ namespace LinuxMonitoring {
     };
 
     ProcessCache processCache;
+
+    std::string getProcessName(int pid) {
+        std::string path = "/proc/" + std::to_string(pid) + "/comm";
+        std::ifstream file(path);
+        if (file.is_open()) {
+            std::string processName;
+            std::getline(file, processName);
+            return processName;
+        } else {
+            if (errno == EACCES) {
+                Logger::log("Permission denied when accessing " + path);
+                return "Permission Denied";
+            } else {
+                Logger::log("Error accessing " + path + ": " + std::strerror(errno));
+                return "Access Error";
+            }
+        }
+    }
 
     std::pair<int, std::string> expensiveLookup(uint16_t port, const std::string& protocol) {
         std::string command = "ss -tulnp | grep '" + protocol + "' | grep ':" + std::to_string(port) + "'";
@@ -140,23 +162,7 @@ namespace LinuxMonitoring {
     //     }
     // }
 
-    std::string getProcessName(int pid) {
-        std::string path = "/proc/" + std::to_string(pid) + "/comm";
-        std::ifstream file(path);
-        if (file.is_open()) {
-            std::string processName;
-            std::getline(file, processName);
-            return processName;
-        } else {
-            if (errno == EACCES) {
-                Logger::log("Permission denied when accessing " + path);
-                return "Permission Denied";
-            } else {
-                Logger::log("Error accessing " + path + ": " + std::strerror(errno));
-                return "Access Error";
-            }
-        }
-    }
+    
 
     std::pair<int, std::string> getProcessInfoForPort(uint16_t port, const std::string& protocol) {
         std::string cacheKey = protocol + ":" + std::to_string(port);
@@ -404,15 +410,22 @@ void handleUdpPacket(const u_char *packet, const struct ip *ipHeader, bool isOut
     }
 }
 
-    void handleIcmpPacket(const u_char *packet, const struct ip *ipHeader, bool isOutgoing) {
-        const struct icmphdr *icmpHeader = (struct icmphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
-        std::string logMessage = "ICMP Packet - Type: " + std::to_string(icmpHeader->type) + ", Code: " + std::to_string(icmpHeader->code);
-        logPacketInfo(logMessage);
+    // void handleIcmpPacket(const u_char *packet, const struct ip *ipHeader, bool isOutgoing) {
+    //     const struct icmphdr *icmpHeader = (struct icmphdr *)(packet + sizeof(struct ether_header) + sizeof(struct ip));
+    //     std::string logMessage = "ICMP Packet - Type: " + std::to_string(icmpHeader->type) + ", Code: " + std::to_string(icmpHeader->code);
+    //     logPacketInfo(logMessage);
 
-        // Try to find the process using the 'ping' command as an example
-        int pid = getProcessIdForCommand("ping");
-        std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
-        logMessage = "ICMP Handler Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
+    //     // Try to find the process using the 'ping' command as an example
+    //     int pid = getProcessIdForCommand("ping");
+    //     std::string processName = (pid != -1) ? getProcessName(pid) : "Unknown";
+    //     logMessage = "ICMP Handler Process: " + processName + " (PID: " + (pid != -1 ? std::to_string(pid) : "Unknown") + ")";
+    //     logPacketInfo(logMessage);
+    // }
+    void handleIcmpPacket() {
+        std::string logMessage = "ICMP Packet";
+        logPacketInfo(logMessage);
+        std::string processName = getProcessName(INIT_PROCESS_PID);
+        logMessage = "ICMP Handler Process: " + processName + " (PID: " + std::to_string(INIT_PROCESS_PID) + ")";
         logPacketInfo(logMessage);
     }
 
@@ -437,7 +450,7 @@ void handleUdpPacket(const u_char *packet, const struct ip *ipHeader, bool isOut
                     handleUdpPacket(packet, ipHeader, isSource);
                     break;
                 case IPPROTO_ICMP:
-                    handleIcmpPacket(packet, ipHeader, isSource);
+                    handleIcmpPacket();
                     break;
                 default:
                     logMessage = "Other IP Protocol: " + std::to_string(static_cast<int>(ipHeader->ip_p));

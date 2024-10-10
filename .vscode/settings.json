@@ -50,6 +50,10 @@
         "codecvt": "cpp",
         "condition_variable": "cpp",
         "iomanip": "cpp",
-        "mutex": "cpp"
+        "mutex": "cpp",
+        "bitset": "cpp",
+        "cstring": "cpp",
+        "iterator": "cpp",
+        "regex": "cpp"
     }
 }
