@@ -3,6 +3,9 @@
 #include <thread>
 #include <chrono>
 #include <pcap.h>
+#include <string>
+#include <array>
+#include <cstdlib>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
@@ -11,6 +14,7 @@
 #include <netinet/ip_icmp.h>
 #include <unordered_map>
 #include <unistd.h>
+#include <optional>
 #include <fstream>
 #include <sstream>
 #include "../utils/logger.h"
