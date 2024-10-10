@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall -Iinclude -Iinclude/core -Iinclude/platform/linux -Iinclude/utils -Iinclude/nDPI/src/include
+CXXFLAGS = -std=c++17 -Wall -Iinclude -Iinclude/core -Iinclude/platform/linux -Iinclude/utils -Iinclude/nDPI/src/include
 LDFLAGS = -lpcap -lcap -Linclude/nDPI/src/lib -lndpi
 
 SRC_DIR = src
